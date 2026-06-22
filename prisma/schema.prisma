@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  TENANT_ADMIN
+  STANDARD_USER
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+model Tenant {
+  id String @id @default(uuid())
+  
+  storeName String
+  legalBusinessName String
+  businessType String
+  trialStartDate DateTime
+  trialEndDate DateTime
+
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  tenantStatus TenantStatus @default(ACTIVE)
+
+  users User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+
+  @@map("tenants")
+}
+
+model User {
+  id String @id @default(uuid())
+
+  tenantId String
+  tenant Tenant @relation(fields:[tenantId], references:[id], onDelete:Cascade)
+
+  fullName String
+  email String @unique
+  mobileNumber String 
+  passwordHash  String
+  
+  role UserRole @default(TENANT_ADMIN)
+
+  isEmailVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([email])
+
+  @@map("users")
+}
